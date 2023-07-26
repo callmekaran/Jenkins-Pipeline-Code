@@ -1,0 +1,13 @@
+##Ansible Yaml File For Deploy Container On Remote Node
+---
+- name: test
+  hosts: qlt
+  tasks:
+          - name: stop old docker container
+            shell: docker stop test-container
+          - name: remove old continer
+            shell: docker rm test-container
+          - name: remove old image
+            shell: docker rmi karanravat/hum:latest
+          - name: create new image with new container
+            shell: docker run -itd --name test-container karanravat/hum:latest
