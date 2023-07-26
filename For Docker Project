@@ -1,5 +1,7 @@
 ### This is Going to be Very Easy We will Download or Pull Image From Git WHich Devloper or Devops Person Will Give, We will Build & Upload it On Dockerhub
 ### By using Ansible we will deploy it on Docker Web Server
+### Some of the Changes will need like sudo usermod -aG docker ubuntu and jenkins, sudo chmod 777 sudo chmod 777 /var/run/docker.sock or you can add setfacl for it and restart docker service
+### also add credentials manually by using sudo su jenkins to upload images on dockerhub
 
 pipeline {
     agent any
