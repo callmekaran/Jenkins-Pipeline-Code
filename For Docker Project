@@ -1,0 +1,37 @@
+### This is Going to be Very Easy We will Download or Pull Image From Git WHich Devloper or Devops Person Will Give, We will Build & Upload it On Dockerhub
+### By using Ansible we will deploy it on Docker Web Server
+
+pipeline {
+    agent any
+
+    stages {
+        stage('Git Pull Code') {
+            steps {
+                git branch: 'main', changelog: false, poll: false, url: 'https://github.com/callmekaran/Test.git'
+            }
+        }
+    stage('Build Code') {
+            steps {
+                sh 'docker build -t newcustomimage .'
+            }
+        }
+    stage('Docker Tag') {
+            steps {
+                sh 'docker tag newcustomimage karanravat/hum:latest'
+                sh 'docker tag newcustomimage karanravat/hum:v1.$BUILD_NUMBER'
+            }
+        }
+    stage('Push Images On Dockerhub With New Tag') {
+            steps {
+                sh 'docker push karanravat/hum:latest'
+                sh 'docker push karanravat/hum:v1.$BUILD_NUMBER'
+                sh 'docker rmi  karanravat/hum:latest karanravat/hum:v1.$BUILD_NUMBER newcustomimage karanravat/hum:latest karanravat/hum:v1.$BUILD_NUMBER'
+            }
+        }
+    stage('Run On Another Node Via Ansible Playbook') {
+            steps {
+                ansiblePlaybook credentialsId: 'db7375b6-12e7-4807-9d22-fbc1137feac7', inventory: '/etc/ansible/hosts', playbook: '/home/ubuntu/test.yml'
+            }
+        }
+    }
+}
