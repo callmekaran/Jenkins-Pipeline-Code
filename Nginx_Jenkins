@@ -1,0 +1,26 @@
+pipeline {
+    agent any
+
+    stages {
+        stage('Pull code') {
+            steps {
+                git branch: 'main', url: 'https://github.com/callmekaran/Php_Project_Rlogical.git'
+            }
+        }
+        
+        stage('Copy to Local') {
+            steps {
+                sshPublisher(publishers: [sshPublisherDesc(configName: 'Jenkin Server', transfers: [sshTransfer(cleanRemote: false, excludes: '', execCommand: '''
+                rsync -a /var/lib/jenkins/workspace/Php_Project_Pipeline/ root@13.235.148.192:/var/www/html/
+''')])])
+}
+}
+        stage('Restart nginx') {
+            steps {
+                echo "Deployment"
+                sshPublisher(publishers: [sshPublisherDesc(configName: 'WEBSERVER', transfers: [sshTransfer(cleanRemote: false, excludes: '', execCommand: '''
+                systemctl reload nginx''')])])
+}
+}
+}
+}
