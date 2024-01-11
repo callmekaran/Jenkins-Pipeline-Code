@@ -1,0 +1,43 @@
+
+
+pipeline {
+    agent any
+
+    stages {
+        stage('Git Pull') {
+            steps {
+                echo "Checking out code from Git"
+                git branch: 'main', url: 'https://github.com/callmekaran/Docker_html_Rlogical.git'
+            }
+        }
+
+        stage('Building and uploading') {
+            steps {
+                echo "Building and uploading"
+                script {
+                    sh """
+                        cd $WORKSPACE
+                    sudo docker build -t $JOB_NAME:$BUILD_ID .
+                    sudo docker tag $JOB_NAME:$BUILD_ID karanravat/$JOB_NAME:$BUILD_ID
+                    sudo docker push karanravat/$JOB_NAME:$BUILD_ID
+                    sudo docker tag $JOB_NAME:$BUILD_ID karanravat/$JOB_NAME:latest
+                    sudo docker push karanravat/$JOB_NAME:latest
+                    sudo docker rmi karanravat/$JOB_NAME:latest karanravat/$JOB_NAME:$BUILD_ID $JOB_NAME:$BUILD_ID
+                    """
+                }
+            }
+        }
+        
+        stage('Deploying') {
+            steps {
+                echo "Deployment"
+                sshPublisher(publishers: [sshPublisherDesc(configName: 'Docker', transfers: [sshTransfer(cleanRemote: false, excludes: '', execCommand: '''
+                sudo docker stop rlogical-docker
+                sudo docker rm rlogical-docker
+                sudo docker rmi karanravat/docker_project
+                sudo docker run -d --name rlogical-docker -p 80:80 karanravat/docker_project
+                ''')])])
+            }
+        }
+    }
+}
