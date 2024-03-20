@@ -1,0 +1,72 @@
+**######PHP############**
+**Bold Text**
+
+
+cd filepath
+git fetch --all
+git pull
+git reset -- hard origin/master
+
+
+#######React Frontend
+
+nvm use v20.11.1
+cd /var/www/html/react_timeflow_frontend/
+pm2 delete react_timeflow_frontend
+rm -r package-lock.json
+git fetch --all
+git reset --hard origin/master
+cd /var/www/html
+chmod -R 775 react_timeflow_frontend
+cd /var/www/html/react_timeflow_frontend
+npm install 
+npm run build 
+pm2 start npm --log-date-format 'DD-MM HH:mm:ss.SSS' --name "react_timeflow_frontend" -- start
+pm2 save
+
+
+########Python
+
+#!/bin/sh
+
+
+cd /var/www/html/python_timeflow_backend/
+pwd
+git fetch --all
+git pull origin master
+git reset -- hard origin/master
+pm2 delete timeflow_backend
+cd /var/www/html/
+deactivate || true
+python -m venv venv
+source /var/www/html/venv/bin/activate
+cd /var/www/html/python_timeflow_backend/requirements/
+
+pip install -r base.txt
+pip install -r local.txt
+cd /var/www/html/python_timeflow_backend/timeflow
+
+python manage.py loaddata src/configuration/fixtures/location.json
+python manage.py loaddata src/configuration/fixtures/region.json
+python manage.py loaddata src/configuration/fixtures/category_subcategory.json
+
+pm2 start manage.py --name "timeflow_backend" --interpreter python -- runserver
+
+###############Backend MIA
+
+cd /var/www/html/backend-mia-dev/backend-mia
+nvm alias default v16.15.1
+pm2 stop Mia-Backend-Dev
+rm -r package-lock.json
+rm -r dist
+git fetch --all
+git reset --hard origin/SIT
+npm install --force
+npm run start
+pm2 restart Mia-Backend-Dev
+
+################################Docker Compose
+
+docker-compose build
+docker-compose up --detach
+docker ps -a
