@@ -1,0 +1,20 @@
+pipeline {
+    agent any
+
+    stages {
+        stage('Hello') {
+            steps {
+                echo 'Hello World'
+            }
+        }
+    }
+
+    post {
+        success {
+            script {
+                // Notify success to Hangouts Chat using the specified token
+                hangoutsNotifySuccess(token: "6r06vPcpo0OGPj")
+            }
+        }
+    }
+}
