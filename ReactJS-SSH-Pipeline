@@ -1,0 +1,80 @@
+pipeline {
+  agent any
+
+  environment {
+    remoteHost = '139.59.32.59' // Replace with your remote hostname or IP
+  }
+
+  stages {
+    stage('Git Checkout & Pull') {
+      steps {
+        script {
+          sshCommand("""
+            echo 'Git Pull is executing'
+            cd /var/www/html/react_sales_crm/CRM_FrontEnd
+            pwd
+            git fetch --all
+            git pull origin develop
+            git reset --hard origin/develop
+          """)
+        }
+      }
+    }
+
+    stage('Build') {
+      steps {
+        script {
+          sshCommand("""
+            . ~/.nvm/nvm.sh
+            nvm install v20.11.1
+            nvm use v20.11.1
+            echo 'Building is executing'
+            cd /var/www/html/react_sales_crm/CRM_FrontEnd
+            rm -rf package-lock.json yarn.lock
+            npm install
+            npm run build
+          """)
+        }
+      }
+    }
+
+    stage('Start Application') {
+      steps {
+        script {
+          sshCommand("""
+            echo fs.inotify.max_user_watches=524288 | sudo tee -a /etc/sysctl.conf && sudo sysctl -p
+            . ~/.nvm/nvm.sh
+            nvm use v20.11.1
+            echo 'Starting Application'
+            cd /var/www/html/react_sales_crm/CRM_FrontEnd
+            pm2 delete react_sales_crm
+            pm2 start npm --log-date-format 'DD-MM HH:mm:ss.SSS' --name "react_sales_crm" -- run dev
+            pm2 save
+          """)
+        }
+      }
+    }
+  }
+
+  post {
+    success {
+      script {
+        // Notify success to Hangouts Chat using a custom function
+        hangoutsNotifySuccess(token: "6r06suAAZ6e_JhbvPcpo0OGPj")
+      }
+    }
+    failure {
+      script {
+        // Notify failure to Hangouts Chat using a custom function
+        hangoutsNotifyFailure(token: "6r06suAAZ6e_JhbvPcpo0OGPj")
+      }
+    }
+  }
+}
+
+def sshCommand(commands) {
+  withCredentials([usernamePassword(credentialsId: 'Dev_Server', usernameVariable: 'REMOTE_USER', passwordVariable: 'REMOTE_PASSWORD')]) {
+    // Avoid using string interpolation for secure passing of credentials
+    sh "echo '''${commands}''' | sshpass -p '${REMOTE_PASSWORD}' ssh -o StrictHostKeyChecking=no ${REMOTE_USER}@${remoteHost}"
+  }
+}
