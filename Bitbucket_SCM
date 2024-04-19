@@ -1,0 +1,53 @@
+# Go to repo ---> repo setting ---> webhook ---> add webhook -->
+
+type url = https://jenkins.rlogical.com/bitbucket-hook/ (of ur jenkins jenkins/bitbucket-hook/)
+status - active (if ask)
+trigggers pull , comment (for test), branch merge
+
+
+Go to pipeline Select Build Triggers = Choose Build when a change is pushed to BitBucket
+& write code
+
+pipeline {
+    agent any
+    
+    stages {
+        stage('Initialize') {
+            steps {
+                script {
+                    // Git checkout configuration
+                    checkout([$class: 'GitSCM',
+                              branches: [[name: '*/master']], // Checkout the 'master' branch
+                              userRemoteConfigs: [[
+                                  credentialsId: 'DevOps_Bitbucket_Rlogical', // Jenkins credentials ID
+                                  url: 'https://DevOps-Rlogical@bitbucket.org/rlogicaltechsoft/fortest.git'
+                              ]],
+                              extensions: []
+                    ])
+                }
+            }
+        }
+
+        // Add more stages for build, test, deploy, etc.
+        stage('Build') {
+            steps {
+                // Add build steps here
+                sh 'echo "Building..."'
+            }
+        }
+
+        stage('Test') {
+            steps {
+                // Add test steps here
+                sh 'echo "Testing..."'
+            }
+        }
+
+        stage('Deploy') {
+            steps {
+                // Add deployment steps here
+                sh 'echo "Deploying..."'
+            }
+        }
+    }
+}
