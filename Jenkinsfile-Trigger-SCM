@@ -1,4 +1,7 @@
-#Need to test Github trigger
+#Working
+#Just Select pollscm wait few mins
+#Just select bitbucket when pull and wait few mins
+
 
 pipeline {
     agent any
@@ -16,6 +19,7 @@ pipeline {
                                     execCommand: '''
                                         cd /var/www/html/react_optomconnect/
                                         git fetch --all
+                                        git pull origin master
                                         git reset --hard origin/master
                                     ''',
                                     execTimeout: 120000,
@@ -39,6 +43,7 @@ pipeline {
                             transfers: [
                                 sshTransfer(
                                     execCommand: '''
+                                        . ~/.nvm/nvm.sh
                                         cd /var/www/html/react_optomconnect/
                                         nvm use v20.11.1
                                         npm install
@@ -66,7 +71,8 @@ pipeline {
                                 sshTransfer(
                                     execCommand: '''
                                         cd /var/www/html/react_optomconnect/
-                                        pm2 delete react_optomconnect || true  // Stop if running
+                                        nvm use v20.11.1
+                                        pm2 delete react_optomconnect
                                         pm2 start npm --log-date-format 'DD-MM HH:mm:ss.SSS' --name "react_optomconnect" -- start
                                         pm2 save
                                     ''',
