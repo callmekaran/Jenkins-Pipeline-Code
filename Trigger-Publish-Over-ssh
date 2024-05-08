@@ -1,0 +1,84 @@
+#Need to test Github trigger
+
+pipeline {
+    agent any
+    
+    stages {
+        stage('Git Pull') {
+            steps {
+                script {
+                    // Execute SSH commands to update the Git repository
+                    sshPublisher(publishers: [
+                        sshPublisherDesc(
+                            configName: 'Dev-Server',
+                            transfers: [
+                                sshTransfer(
+                                    execCommand: '''
+                                        cd /var/www/html/react_optomconnect/
+                                        git fetch --all
+                                        git reset --hard origin/master
+                                    ''',
+                                    execTimeout: 120000,
+                                    useSftp: false
+                                )
+                            ],
+                            verbose: true
+                        )
+                    ])
+                }
+            }
+        }
+
+        stage('Build') {
+            steps {
+                script {
+                    // Execute SSH commands to install dependencies and build the project
+                    sshPublisher(publishers: [
+                        sshPublisherDesc(
+                            configName: 'Dev-Server',
+                            transfers: [
+                                sshTransfer(
+                                    execCommand: '''
+                                        cd /var/www/html/react_optomconnect/
+                                        nvm use v20.11.1
+                                        npm install
+                                        npm run build
+                                    ''',
+                                    execTimeout: 120000,
+                                    useSftp: false
+                                )
+                            ],
+                            verbose: true
+                        )
+                    ])
+                }
+            }
+        }
+
+        stage('Deploy') {
+            steps {
+                script {
+                    // Execute SSH commands to start the application with PM2
+                    sshPublisher(publishers: [
+                        sshPublisherDesc(
+                            configName: 'Dev-Server',
+                            transfers: [
+                                sshTransfer(
+                                    execCommand: '''
+                                        cd /var/www/html/react_optomconnect/
+                                        pm2 delete react_optomconnect || true  // Stop if running
+                                        pm2 start npm --log-date-format 'DD-MM HH:mm:ss.SSS' --name "react_optomconnect" -- start
+                                        pm2 save
+                                    ''',
+                                    execTimeout: 120000,
+                                    useSftp: false
+                                )
+                            ],
+                            verbose: true
+                        )
+                    ])
+                }
+            }
+        }
+    }
+}
