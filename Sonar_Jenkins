@@ -1,0 +1,30 @@
+pipeline {
+    agent any
+
+    stages {
+        stage('Checkout') {
+            steps {
+                git branch: 'main', 
+                    changelog: false, 
+                    credentialsId: 'github', 
+                    poll: false, 
+                    url: 'https://karanravat60-admin@bitbucket.org/karanravat60/f.git'
+            }
+        }
+
+        stage('SonarQube Analysis') {
+             environment {
+                SONAR_TOKEN = credentials('sonar-token') // Using the credential ID defined in Jenkins
+            }
+
+            steps {
+                script {
+                    def scannerHome = tool 'SonarScanner'; // Specify the tool name for SonarScanner
+                    withSonarQubeEnv('SonarQube') { // 'SonarQube' is the name of the SonarQube server configured in Jenkins
+                        sh "${scannerHome}/bin/sonar-scanner"
+                    }
+                }
+            }
+        }
+    }
+}
