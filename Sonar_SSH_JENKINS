@@ -28,23 +28,6 @@ pipeline {
             }
         }
 
-        stage('Build Project') {
-            steps {
-                script {
-                    echo 'Building the project...'
-                    // Install dependencies and build the project
-                    sshExecute(
-                        server: env.DEV_SERVER,
-                        command: """
-                            cd ${env.REMOTE_DIR} &&
-                            npm install --force &&
-                            npm run build
-                        """
-                    )
-                }
-            }
-        }
-
         stage('Run SonarQube Analysis') {
             steps {
                 script {
@@ -62,7 +45,39 @@ pipeline {
                 }
             }
         }
-    }
+
+     stage('Build Project') {
+            steps {
+                script {
+                    echo 'Building the project...'
+                    // Install dependencies and build the project
+                    sshExecute(
+                        server: env.DEV_SERVER,
+                        command: """
+                            cd ${env.REMOTE_DIR} &&
+                            npm install --force &&
+                            npm run build
+                        """
+                    )
+                }
+            }
+        }
+
+     stage('Deploy Project') {
+            steps {
+                script {
+                    echo 'Building the project...'
+                    // Install dependencies and build the project
+                    sshExecute(
+                        server: env.DEV_SERVER,
+                        command: """
+                            pm2 delete test-admin
+                            pm2 start npm --name test-admin -- run start
+                        """
+                    )
+                }
+            }
+        }
 
     post {
         success {
