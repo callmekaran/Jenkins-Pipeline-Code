@@ -2,9 +2,13 @@ pipeline {
     agent any
 
     environment {
-        DEV_SERVER = 'Dev-Server' // Name of the SSH server configuration in Jenkins
-        REMOTE_DIR = '/home/ubuntu/karan' // Remote directory on the server where actions will be performed
-        BITBUCKET_CREDENTIALS = credentials('bitbucket-credentials') // Credential ID for Bitbucket App Password in Jenkins
+        DEV_SERVER = 'Dev-Server'
+        REMOTE_DIR = '/home/ubuntu/karan'
+        BITBUCKET_CREDENTIALS = credentials('bitbucket-credentials')
+        SONAR_TOKEN = credentials('Sonar-Token')
+        SONAR_SCANNER_HOME = '/opt/sonar-scanner'
+        SONAR_PASSWORD = credentials('sonar-password')
+        SONAR_LOGIN = credentials('sonar-login')
     }
 
     stages {
@@ -24,6 +28,65 @@ pipeline {
                                             git pull https://${BITBUCKET_CREDENTIALS_USR}:${BITBUCKET_CREDENTIALS_PSW}@bitbucket.org/karanravat60/f.git main
                                         """,
                                         execTimeout: 120000,
+                                        usePty: true
+                                    )
+                                ],
+                                usePromotionTimestamp: false,
+                                verbose: true
+                            )
+                        ]
+                    )
+                }
+            }
+        }
+
+        stage('Run SonarQube Analysis') {
+            steps {
+                script {
+                    echo 'Running SonarQube analysis on the development server...'
+                    sshPublisher(
+                        publishers: [
+                            sshPublisherDesc(
+                                configName: DEV_SERVER,
+                                transfers: [
+                                    sshTransfer(
+                                        sourceFiles: '',
+                                        execCommand: """
+                                            cd $REMOTE_DIR &&
+                                            ${env.SONAR_SCANNER_HOME}/bin/sonar-scanner \
+                                            -Dsonar.login=${env.SONAR_LOGIN} \
+                                            -Dsonar.password=${env.SONAR_PASSWORD}
+                                        """,
+                                        execTimeout: 300000,
+                                        usePty: true
+                                    )
+                                ],
+                                usePromotionTimestamp: false,
+                                verbose: true
+                            )
+                        ]
+                    )
+                }
+            }
+        }
+        
+        stage('Build Project') {
+            steps {
+                script {
+                    echo 'Building the project...'
+                    sshPublisher(
+                        publishers: [
+                            sshPublisherDesc(
+                                configName: DEV_SERVER,
+                                transfers: [
+                                    sshTransfer(
+                                        sourceFiles: '',
+                                        execCommand: """
+                                            cd $REMOTE_DIR
+                                            npm install --force
+                                            npm run build
+                                        """,
+                                        execTimeout: 1000000, // Increase timeout if needed
                                         usePty: true
                                     )
                                 ],
