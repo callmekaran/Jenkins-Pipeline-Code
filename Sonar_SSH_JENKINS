@@ -2,7 +2,6 @@ pipeline {
     agent any
 
     environment {
-        // Define environment variables for reusability and central configuration
         DEV_SERVER = 'Dev-Server' // SSH server configuration in Jenkins
         REMOTE_DIR = '/home/ubuntu/karan' // Remote directory on the server
         BITBUCKET_CREDENTIALS = credentials('bitbucket-credentials') // Bitbucket credentials
@@ -16,7 +15,6 @@ pipeline {
             steps {
                 script {
                     echo 'Pulling latest code from Git repository on the development server...'
-                    // Pull latest code from the Git repository
                     sshExecute(
                         server: env.DEV_SERVER,
                         command: """
@@ -28,11 +26,26 @@ pipeline {
             }
         }
 
+        stage('Build Project') {
+            steps {
+                script {
+                    echo 'Building the project...'
+                    sshExecute(
+                        server: env.DEV_SERVER,
+                        command: """
+                            cd ${env.REMOTE_DIR} &&
+                            npm install --force &&
+                            npm run build
+                        """
+                    )
+                }
+            }
+        }
+
         stage('Run SonarQube Analysis') {
             steps {
                 script {
                     echo 'Running SonarQube analysis on the development server...'
-                    // Run SonarQube analysis
                     sshExecute(
                         server: env.DEV_SERVER,
                         command: """
@@ -46,45 +59,34 @@ pipeline {
             }
         }
 
-     stage('Build Project') {
+        stage('Deploy Project') {
             steps {
                 script {
-                    echo 'Building the project...'
-                    // Install dependencies and build the project
+                    echo 'Deploying the project...'
                     sshExecute(
                         server: env.DEV_SERVER,
                         command: """
                             cd ${env.REMOTE_DIR} &&
-                            npm install --force &&
-                            npm run build
-                        """
-                    )
-                }
-            }
-        }
-
-     stage('Deploy Project') {
-            steps {
-                script {
-                    echo 'Building the project...'
-                    // Install dependencies and build the project
-                    sshExecute(
-                        server: env.DEV_SERVER,
-                        command: """
-                            pm2 delete test-admin
+                            pm2 delete test-admin || true &&
                             pm2 start npm --name test-admin -- run start
                         """
                     )
                 }
             }
         }
+    }
 
     post {
         success {
-            echo 'Pipeline completed successfully on the development server.'
+            script {
+                // Replace this with the method for notifying success
+                hangoutsNotifySuccess(token: credentials('hangouts-chat-token'))
+            }
         }
         failure {
-            echo 'Pipeline failed. Check logs for details.'
+            script {
+                hangoutsNotifyFailure(token: credentials('hangouts-chat-token'))
+            }
         }
     }
 }
