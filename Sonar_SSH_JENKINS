@@ -2,13 +2,13 @@ pipeline {
     agent any
 
     environment {
-        DEV_SERVER = 'Dev-Server'
-        REMOTE_DIR = '/home/ubuntu/karan'
-        BITBUCKET_CREDENTIALS = credentials('bitbucket-credentials')
-        SONAR_TOKEN = credentials('Sonar-Token')
-        SONAR_SCANNER_HOME = '/opt/sonar-scanner'
-        SONAR_PASSWORD = credentials('sonar-password')
-        SONAR_LOGIN = credentials('sonar-login')
+        // Define environment variables for reusability and central configuration
+        DEV_SERVER = 'Dev-Server' // SSH server configuration in Jenkins
+        REMOTE_DIR = '/home/ubuntu/karan' // Remote directory on the server
+        BITBUCKET_CREDENTIALS = credentials('bitbucket-credentials') // Bitbucket credentials
+        SONAR_SCANNER_HOME = '/opt/sonar-scanner' // Path to SonarScanner
+        SONAR_LOGIN = credentials('sonar-login') // SonarQube login token
+        SONAR_PASSWORD = credentials('sonar-password') // SonarQube password
     }
 
     stages {
@@ -16,25 +16,30 @@ pipeline {
             steps {
                 script {
                     echo 'Pulling latest code from Git repository on the development server...'
-                    sshPublisher(
-                        publishers: [
-                            sshPublisherDesc(
-                                configName: DEV_SERVER,
-                                transfers: [
-                                    sshTransfer(
-                                        sourceFiles: '',
-                                        execCommand: """
-                                            cd $REMOTE_DIR &&
-                                            git pull https://${BITBUCKET_CREDENTIALS_USR}:${BITBUCKET_CREDENTIALS_PSW}@bitbucket.org/karanravat60/f.git main
-                                        """,
-                                        execTimeout: 120000,
-                                        usePty: true
-                                    )
-                                ],
-                                usePromotionTimestamp: false,
-                                verbose: true
-                            )
-                        ]
+                    // Pull latest code from the Git repository
+                    sshExecute(
+                        server: env.DEV_SERVER,
+                        command: """
+                            cd ${env.REMOTE_DIR} &&
+                            git pull https://${BITBUCKET_CREDENTIALS_USR}:${BITBUCKET_CREDENTIALS_PSW}@bitbucket.org/karanravat60/f.git main
+                        """
+                    )
+                }
+            }
+        }
+
+        stage('Build Project') {
+            steps {
+                script {
+                    echo 'Building the project...'
+                    // Install dependencies and build the project
+                    sshExecute(
+                        server: env.DEV_SERVER,
+                        command: """
+                            cd ${env.REMOTE_DIR} &&
+                            npm install --force &&
+                            npm run build
+                        """
                     )
                 }
             }
@@ -44,59 +49,48 @@ pipeline {
             steps {
                 script {
                     echo 'Running SonarQube analysis on the development server...'
-                    sshPublisher(
-                        publishers: [
-                            sshPublisherDesc(
-                                configName: DEV_SERVER,
-                                transfers: [
-                                    sshTransfer(
-                                        sourceFiles: '',
-                                        execCommand: """
-                                            cd $REMOTE_DIR &&
-                                            ${env.SONAR_SCANNER_HOME}/bin/sonar-scanner \
-                                            -Dsonar.login=${env.SONAR_LOGIN} \
-                                            -Dsonar.password=${env.SONAR_PASSWORD}
-                                        """,
-                                        execTimeout: 300000,
-                                        usePty: true
-                                    )
-                                ],
-                                usePromotionTimestamp: false,
-                                verbose: true
-                            )
-                        ]
-                    )
-                }
-            }
-        }
-        
-        stage('Build Project') {
-            steps {
-                script {
-                    echo 'Building the project...'
-                    sshPublisher(
-                        publishers: [
-                            sshPublisherDesc(
-                                configName: DEV_SERVER,
-                                transfers: [
-                                    sshTransfer(
-                                        sourceFiles: '',
-                                        execCommand: """
-                                            cd $REMOTE_DIR
-                                            npm install --force
-                                            npm run build
-                                        """,
-                                        execTimeout: 1000000, // Increase timeout if needed
-                                        usePty: true
-                                    )
-                                ],
-                                usePromotionTimestamp: false,
-                                verbose: true
-                            )
-                        ]
+                    // Run SonarQube analysis
+                    sshExecute(
+                        server: env.DEV_SERVER,
+                        command: """
+                            cd ${env.REMOTE_DIR} &&
+                            ${env.SONAR_SCANNER_HOME}/bin/sonar-scanner \
+                            -Dsonar.login=${env.SONAR_LOGIN} \
+                            -Dsonar.password=${env.SONAR_PASSWORD}
+                        """
                     )
                 }
             }
         }
     }
+
+    post {
+        success {
+            echo 'Pipeline completed successfully on the development server.'
+        }
+        failure {
+            echo 'Pipeline failed. Check logs for details.'
+        }
+    }
+}
+
+// Define a reusable function for SSH execution to avoid redundancy
+def sshExecute(Map params) {
+    sshPublisher(
+        publishers: [
+            sshPublisherDesc(
+                configName: params.server,
+                transfers: [
+                    sshTransfer(
+                        sourceFiles: '',
+                        execCommand: params.command,
+                        execTimeout: params.timeout ?: 60000, // Default timeout if not specified
+                        usePty: true
+                    )
+                ],
+                usePromotionTimestamp: false,
+                verbose: true
+            )
+        ]
+    )
 }
