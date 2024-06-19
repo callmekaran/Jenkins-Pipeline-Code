@@ -2,12 +2,13 @@ pipeline {
     agent any
 
     environment {
-        DEV_SERVER = 'Dev-Server' // SSH server configuration in Jenkins
-        REMOTE_DIR = '/home/ubuntu/karan' // Remote directory on the server
-        BITBUCKET_CREDENTIALS = credentials('bitbucket-credentials') // Bitbucket credentials
-        SONAR_SCANNER_HOME = '/opt/sonar-scanner' // Path to SonarScanner
-        SONAR_LOGIN = credentials('sonar-login') // SonarQube login token
-        SONAR_PASSWORD = credentials('sonar-password') // SonarQube password
+        // Environment variables for server and tools configuration
+        DEV_SERVER = 'Dev-Server'
+        REMOTE_DIR = '/home/ubuntu/karan'
+        BITBUCKET_CREDENTIALS = credentials('bitbucket-credentials')
+        SONAR_SCANNER_HOME = '/opt/sonar-scanner'
+        SONAR_LOGIN = credentials('sonar-login')
+        SONAR_PASSWORD = credentials('sonar-password')
     }
 
     stages {
@@ -20,22 +21,6 @@ pipeline {
                         command: """
                             cd ${env.REMOTE_DIR} &&
                             git pull https://${BITBUCKET_CREDENTIALS_USR}:${BITBUCKET_CREDENTIALS_PSW}@bitbucket.org/karanravat60/f.git main
-                        """
-                    )
-                }
-            }
-        }
-
-        stage('Build Project') {
-            steps {
-                script {
-                    echo 'Building the project...'
-                    sshExecute(
-                        server: env.DEV_SERVER,
-                        command: """
-                            cd ${env.REMOTE_DIR} &&
-                            npm install --force &&
-                            npm run build
                         """
                     )
                 }
@@ -59,6 +44,40 @@ pipeline {
             }
         }
 
+# In Your project / Project settings, select Webhooks,  set the url to https://YOUR_JENKINS_URL/sonarqube-webhook/
+
+        stage('Check SonarQube Quality Gate') {
+            steps {
+                script {
+                    echo 'Checking SonarQube quality gate...'
+                    // Wait for SonarQube quality gate result
+                    sleep(60)
+                    timeout(time: 1, unit: 'MINUTES') {
+                        def qualityGate = waitForQualityGate()
+                        if (qualityGate.status != 'OK') {
+                            error "Pipeline aborted due to quality gate failure: ${qualityGate.status}"
+                        }
+                    }
+                }
+            }
+        }
+
+        stage('Build Project') {
+            steps {
+                script {
+                    echo 'Building the project...'
+                    sshExecute(
+                        server: env.DEV_SERVER,
+                        command: """
+                            cd ${env.REMOTE_DIR} &&
+                            npm install --force &&
+                            npm run build
+                        """
+                    )
+                }
+            }
+        }
+
         stage('Deploy Project') {
             steps {
                 script {
@@ -66,7 +85,6 @@ pipeline {
                     sshExecute(
                         server: env.DEV_SERVER,
                         command: """
-                            cd ${env.REMOTE_DIR} &&
                             pm2 delete test-admin || true &&
                             pm2 start npm --name test-admin -- run start
                         """
@@ -79,13 +97,14 @@ pipeline {
     post {
         success {
             script {
-                // Replace this with the method for notifying success
-                hangoutsNotifySuccess(token: credentials('hangouts-chat-token'))
+                echo 'Pipeline completed successfully.'
+                // Notify success to Hangouts Chat using the specified token
+                hangoutsNotifySuccess(token: "6r06vPcpo0OGPj")
             }
         }
         failure {
             script {
-                hangoutsNotifyFailure(token: credentials('hangouts-chat-token'))
+                echo 'Pipeline failed. Please check the logs for details.'
             }
         }
     }
