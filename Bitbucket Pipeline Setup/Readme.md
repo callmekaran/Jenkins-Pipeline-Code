@@ -6,7 +6,7 @@
 
 In Last Command Use & for running runner in Backend, Once it will show online Create Pipeline
 
-Steps:
+Steps: **Which Will Given BY BITBUCKET**
 
 # download the runner zip
 
