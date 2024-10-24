@@ -1,0 +1,21 @@
+pipelines:
+  branches:
+    master:
+    - step:
+        runs-on:
+          - self.hosted
+          - linux.shell
+        script:
+          - echo "Fetching secrets from AWS Secrets Manager..."
+          - SECRETS_JSON=$(aws secretsmanager get-secret-value --secret-id "ARN_HERE" --region us-east-1 --query SecretString --output text)
+          - echo "Writing secrets to .env file..."
+          - echo $SECRETS_JSON | jq -r 'to_entries | map("\(.key | ascii_upcase)=\(.value)") | .[]' > .env
+          - cat .env
+          - npm install
+          - CI=false npm run build
+          - echo "Running post-build commands..."
+          - aws s3 sync build/ s3://aaaaaaaaaaaaa
+          - aws cloudfront create-invalidation --distribution-id EDRABCDEFH --paths "/*"
+
+          
+
