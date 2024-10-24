@@ -1,0 +1,33 @@
+pipelines:
+  branches:
+    master:
+    - step:
+        runs-on:
+          - self.hosted
+          - linux.shell
+        script:
+          - cd /var/www/html/optomconnect/
+          - nvm use v20.10.0
+          - whoami && pwd
+          - echo "Fetching secrets from AWS Secrets Manager..."
+          - SECRETS_JSON=$(aws secretsmanager get-secret-value --secret-id "ARN HERE" --region ap-southeast-2 --query SecretString --output text)
+          - pwd && whoami
+          # Writing secrets to .env file
+          - echo "Writing secrets to .env file..."
+          - echo "$SECRETS_JSON" | jq -r 'to_entries | map("\(.key | ascii_upcase)=\(.value)") | .[]' > .env
+
+          # Installing npm dependencies
+          - npm install
+          
+          # Compiling the project
+          - CI=false npm run compile
+
+          # Syncing the build files to S3
+          - echo "Running post-build commands..."
+
+          # Restarting application with PM2
+          - echo "Restarting application with pm2..."
+          - pm2 restart node_optomconnect 
+
+          # Saving the PM2 process list
+          - pm2 save
