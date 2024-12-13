@@ -25,3 +25,13 @@ pipelines:
                 - export AWS_ROLE_ARN='arn:aws:iam::390403863665:role/Rlogical-Bitbucket-OID'
                 - echo "Uploading artifacts to S3..."
                 - aws s3 sync build/ s3://karan7990539526/
+          - step:
+              name: Invalidate CloudFront Cache
+              oidc: true
+              script:
+                - pipe: atlassian/aws-cloudfront-invalidate:0.10.1
+                  variables:
+                    AWS_DEFAULT_REGION: 'us-east-1'
+                    AWS_OIDC_ROLE_ARN: 'arn:aws:iam::390403863665:role/Rlogical-Bitbucket-OID'
+                    DISTRIBUTION_ID: "E3PUA3PP19RJ6"
+                    PATHS: '/*'  # Make sure the paths are passed as an array, even if it's just '/'
