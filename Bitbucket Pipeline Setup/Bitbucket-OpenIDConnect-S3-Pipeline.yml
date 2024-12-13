@@ -13,17 +13,17 @@ pipelines:
                 - CI=false npm run build 
               artifacts:
                 - build/**
+                
           - step:
-              name: Deploy to S3
-              image: amazon/aws-cli
               oidc: true
               script:
-                - export AWS_WEB_IDENTITY_TOKEN_FILE=$(pwd)/web-identity-token
-                - echo $BITBUCKET_STEP_OIDC_TOKEN > $AWS_WEB_IDENTITY_TOKEN_FILE
-                - export AWS_DEFAULT_REGION=us-east-1
-                - export AWS_ROLE_ARN='arn:aws:iam::390403863665:role/Rlogical-Bitbucket-OID'
-                - echo "Uploading artifacts to S3..."
-                - aws s3 sync build/ s3://karan7990539526/
+                - pipe: atlassian/aws-s3-deploy:1.6.1
+                  variables:
+                    AWS_DEFAULT_REGION: 'us-east-1'
+                    AWS_OIDC_ROLE_ARN: 'arn:aws:iam::390403863665:role/Rlogical-Bitbucket-OID'
+                    S3_BUCKET: 'karan7990539526'
+                    LOCAL_PATH: 'build'
+
           - step:
               name: Invalidate CloudFront Cache
               oidc: true
