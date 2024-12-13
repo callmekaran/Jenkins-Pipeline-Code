@@ -2,9 +2,6 @@
 
 **#Main Case - We have used Openid Connect to make communication beetween bitbucket and aws via role not credentials**
 
-# Template NodeJS build
-# This template validates Node.js code, runs tests, and deploys artifacts to S3.
-
 image: node:20
 
 pipelines:
@@ -13,26 +10,18 @@ pipelines:
           - step:
               name: Build and Test
               script:
-                - apt update && apt install zip -y
-                - echo "Running Tests..."
                 - npm install 
                 - CI=false npm run build 
-                - ls -ll && ls
-                - zip -r build.zip build # Example zipping of the repository
               artifacts:
-                - build.zip
+                - build/**
           - step:
               name: Deploy to S3
               image: amazon/aws-cli
               oidc: true
               script:
-                # Set up OIDC
-                - yum update && yum install unzip -y
                 - export AWS_WEB_IDENTITY_TOKEN_FILE=$(pwd)/web-identity-token
                 - echo $BITBUCKET_STEP_OIDC_TOKEN > $AWS_WEB_IDENTITY_TOKEN_FILE
                 - export AWS_DEFAULT_REGION=us-east-1
-                - echo "Assuming IAM Role with OIDC..."
                 - export AWS_ROLE_ARN='arn:aws:iam::390403863665:role/Rlogical-Bitbucket-OID'
                 - echo "Uploading artifacts to S3..."
-                - unzip build.zip
-                - aws s3 sync build/ s3://karan7990539526/ 
+                - aws s3 sync build/ s3://karan7990539526/
