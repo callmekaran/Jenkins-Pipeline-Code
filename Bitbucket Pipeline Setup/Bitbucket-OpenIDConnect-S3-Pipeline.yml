@@ -2,13 +2,12 @@
 
 **#Main Case - We have used Openid Connect to make communication beetween bitbucket and aws via role not credentials**
 
-image: node:20
-
 pipelines:
   branches:
     master:
           - step:
               name: Build and Test
+              image: node:20
               script:
                 - npm install 
                 - CI=false npm run build 
