@@ -25,4 +25,5 @@ jobs:
           password: ${{ secrets.DEV_SERVER_PASSWORD }}
 
           script: |
-            cd $FRONTEND_DIR && ls -al
+            pwd
+            cd $FRONTEND_DIR && pwd
