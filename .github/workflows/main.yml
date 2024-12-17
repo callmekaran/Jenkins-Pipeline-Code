@@ -22,4 +22,4 @@ jobs:
 
           script: |
               cd /home/rlogical/test/
-              pwd & ls -al
+              git pull origin main
