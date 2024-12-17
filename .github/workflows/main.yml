@@ -27,7 +27,7 @@ jobs:
           script: |
             set -e
             echo "Navigating to frontend directory..."
-            git pull origin main
             cd $FRONTEND_DIR
+            git pull origin main
             echo "Test" >> test.txt
             pwd
