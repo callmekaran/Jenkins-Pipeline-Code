@@ -6,7 +6,7 @@ on:
       - main
 
 env:
-  FRONTEND_DIR: /home/rlogical/test
+  FRONTEND_DIR: /home/rlogical/test/
   APP_NAME: sam1-frontend
 
 jobs:
