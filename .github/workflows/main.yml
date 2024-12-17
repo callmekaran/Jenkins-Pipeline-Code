@@ -21,5 +21,5 @@ jobs:
           password: ${{ secrets.DEV_SERVER_PASSWORD }}
 
           script: |
-            pwd
-            cd /var/www/html/ && ls
+              cd /home/rlogical/test/
+              pwd & ls -al
