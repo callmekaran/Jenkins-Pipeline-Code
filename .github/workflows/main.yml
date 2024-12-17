@@ -25,7 +25,5 @@ jobs:
           password: ${{ secrets.DEV_SERVER_PASSWORD }}
 
           script: |
-            set -e
-            echo "Navigating to frontend directory..."
             cd $FRONTEND_DIR
             ls -al
