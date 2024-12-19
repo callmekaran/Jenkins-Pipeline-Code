@@ -1,0 +1,19 @@
+#Bitbucket SSH Pipelines, Just add Private & Public Key in Bitbucket
+
+pipelines:
+  branches:
+    master:
+      - step:
+          name: Deploy and Run Commands
+          script:
+            - pipe: atlassian/ssh-run:0.8.1
+              variables:
+                SSH_USER: 'root'
+                SERVER: '157.245.103.45'
+                COMMAND: |
+                    'whoami'
+                    'pwd'
+                    './test.sh'
+                PORT: '22'
+                SSH_KEY: $SSH_PRIVATE_KEY
+                DEBUG: 'true'
