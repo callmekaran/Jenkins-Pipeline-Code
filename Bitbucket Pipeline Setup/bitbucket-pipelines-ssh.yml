@@ -17,3 +17,50 @@ pipelines:
                 PORT: '22'
                 SSH_KEY: $SSH_PRIVATE_KEY
                 DEBUG: 'true'
+
+*********************************************************************************************************************************************************************************************************************************************************************************
+
+pipelines:
+  branches:
+    master:
+      - step:
+          name: Deploy and Run Commands
+          script:
+            - pipe: atlassian/ssh-run:0.8.1
+              variables:
+                SSH_USER: 'ubuntu'
+                SERVER: '35.154.219.76'
+                COMMAND: 'sh /var/www/html/deployment.sh'
+                PORT: '22'
+                SSH_KEY: $SSH_PRIVATE_KEY
+                DEBUG: 'true'
+
+********************************************************************************************************************************************************************************************************************************************************************************
+
+#!/bin/bash
+
+# Navigate to the project directory
+cd /var/www/html/api-supportcenter || { echo "Directory not found"; exit 1; }
+
+# Fetch all branches and tags
+git fetch -a
+
+# Reset the local repository to match the remote master branch
+git reset --hard origin/master
+
+# Pull the latest changes from the remote master branch
+git pull origin master
+
+#Export NVM "This loads nvm"
+
+export NVM_DIR="$HOME/.nvm"
+[ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+
+# Use project Version
+nvm use 20
+
+# Install project dependencies
+npm install
+
+# Start the application using PM2
+pm2 restart api_supportcenter || pm2 start npm --name "api_supportcenter" -- run dev
