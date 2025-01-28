@@ -1,0 +1,42 @@
+pipeline {
+    agent any
+
+    stages {
+        stage('Install Dependencies') {
+            steps {
+                sshagent(['Test-Server']) {
+                    script {
+                        def hostIp = ""
+                        def installCommand = """
+                            ssh -o StrictHostKeyChecking=no -l ubuntu ${hostIp} << EOF
+                            cd /home/ubuntu/project
+                            echo \$USER   # Display the remote user
+                            ifconfig
+                            npm install
+EOF
+                        """
+                        sh(script: installCommand)
+                    }
+                }
+            }
+        }
+
+        stage('Build Project') {
+            steps {
+                sshagent(['Test-Server']) {
+                    script {
+                        def hostIp = ""
+                        def buildCommand = """
+                            ssh -o StrictHostKeyChecking=no -l ubuntu ${hostIp} << EOF
+                            cd /home/ubuntu/project
+                            echo "Running npm run build"
+                            npm run build
+EOF
+                        """
+                        sh(script: buildCommand)
+                    }
+                }
+            }
+        }
+    }
+}
