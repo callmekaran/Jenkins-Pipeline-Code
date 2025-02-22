@@ -40,3 +40,47 @@ EOF
         }
     }
 }
+
+==========================================================================================================================================================================================================================
+
+
+
+
+
+pipeline {
+    agent any
+
+    triggers {
+        // Trigger the build whenever there's a push to Bitbucket
+        bitbucketPush buildOnCreatedBranch: false, overrideUrl: ''
+    }
+
+    stages {
+        stage('Execute Remote Commands') {
+            steps {
+                // Execute the shell commands on the remote server using SSH agent
+                sshagent(credentials: ['node-server']) {
+                    script {
+                        def hostIp = "3.154.219.76" // Replace with the actual IP address of the server
+                        def installCommand = """
+                            echo \$USER   # Display the remote user
+                            ifconfig
+                        """
+                        sh(script: "ssh -o StrictHostKeyChecking=no -l ubuntu ${hostIp} '${installCommand}'")
+                    }
+                }
+            }
+        }
+
+
+    }
+    post {
+        success {
+            echo 'Build completed successfully!'
+        }
+        failure {
+            echo 'Build failed!'
+        }
+    }
+}
+
