@@ -61,14 +61,14 @@ pipeline {
     success {
       script {
         // Notify success to Hangouts Chat using a custom function
-        hangoutsNotifySuccess(token: "Eu8g7qxdyIyPT__fYxyBGmwGx")
+        hangoutsNotifySuccess(token: "Eu8g7qxdyIyPTfYxyBGmwGx")
       }
     }
     
     failure {
       script {
         // Notify failure to Hangouts Chat using a custom function
-        hangoutsNotifyFailure(token: "Eu8g7qxdyIyPT__fYxyBGmwGx")
+        hangoutsNotifyFailure(token: "Eu8g7qxdyIyPTfYxyBGmwGx")
       }
     }
   }
