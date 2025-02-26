@@ -1,0 +1,76 @@
+pipeline {
+    agent any
+
+    tools {
+        nodejs 'Nodejs'  // Ensure this matches the name configured in Jenkins
+    }
+
+    stages {
+        stage('Git Checkout') {
+            steps {
+                git credentialsId: 'DevOps_Bitbucket_Rlogical', url: 'https://DevOps-Rlogical@bitbucket.org/rlogicaltechsoft/taxcapture_admin.git'
+            }
+        }
+
+        stage('Install Packages') {
+            steps {
+                sh 'npm install && npm i ajv ajv-keywords'
+            }
+        }
+
+        stage('Create Build') {
+            steps {
+                sh 'CI=false npm run build'
+            }
+        }
+
+        stage('Artifact Build') {
+            steps {
+                archiveArtifacts artifacts: 'build/**/*', followSymlinks: false
+            }
+        }
+
+        stage('Publish Build on Another Server') {
+            steps {
+                sshPublisher(
+                    publishers: [
+                        sshPublisherDesc(
+                            configName: 'dev-server', // Use the configured SSH server in Jenkins
+                            transfers: [
+                                sshTransfer(
+                                    excludes: '',  // Specify files to exclude, if necessary
+                                    execCommand: '',  // Optional: command to execute after file transfer
+                                    sourceFiles: 'build/**/*'  // Path to files to transfer (all files under build/)
+                                )
+                            ],
+                            verbose: true
+                        )
+                    ]
+                )
+            }
+        }
+    }
+
+
+    post {
+        // Clean after build
+        always {
+            cleanWs()
+    }
+        
+    success {
+      script {
+        // Notify success to Hangouts Chat using a custom function
+        hangoutsNotifySuccess(token: "Eu8g7qxdyIyPT__fYxyBGmwGx")
+      }
+    }
+    
+    failure {
+      script {
+        // Notify failure to Hangouts Chat using a custom function
+        hangoutsNotifyFailure(token: "Eu8g7qxdyIyPT__fYxyBGmwGx")
+      }
+    }
+  }
+}
+
