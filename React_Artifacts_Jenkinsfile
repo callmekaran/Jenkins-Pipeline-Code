@@ -8,7 +8,7 @@ pipeline {
     stages {
         stage('Git Checkout') {
             steps {
-                git credentialsId: 'DevOps_Bitbucket_Rlogical', url: 'https://DevOps-Rlogical@bitbucket.org/rlogicaltechsoft/taxcapture_admin.git'
+                git credentialsId: 'DevOps', url: 'https://DevOps-Rlogical@bitbucket.org/karan/tac_admin.git'
             }
         }
 
