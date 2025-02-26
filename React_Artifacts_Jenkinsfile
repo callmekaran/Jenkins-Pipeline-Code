@@ -5,6 +5,10 @@ pipeline {
         nodejs 'Nodejs'  // Ensure this matches the name configured in Jenkins
     }
 
+    options {
+    buildDiscarder logRotator(artifactNumToKeepStr: '5') // store latest 5 artifacts
+    }
+
     stages {
         stage('Git Checkout') {
             steps {
@@ -24,11 +28,15 @@ pipeline {
             }
         }
 
+// Store Build in artifact
+
         stage('Artifact Build') {
             steps {
                 archiveArtifacts artifacts: 'build/**/*', followSymlinks: false
             }
         }
+
+// Transfer Build on Server
 
         stage('Publish Build on Another Server') {
             steps {
