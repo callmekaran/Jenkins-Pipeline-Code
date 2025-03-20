@@ -15,8 +15,21 @@ pipelines:
                     'pwd'
                     './test.sh'
                 PORT: '22'
-                SSH_KEY: $SSH_PRIVATE_KEY
+                SSH_KEY: $SSH_PRIVATE_KEY #if using another key then use $MY_SSH_KEY
                 DEBUG: 'true'
+      - step:
+              script:
+              - ALERT_TYPE="Success"
+              - if [[ $BITBUCKET_EXIT_CODE -ne 0 ]]; then ALERT_TYPE="Failure" ; fi
+              - pipe: atlassian/email-notify:0.13.1
+                variables:
+                    USERNAME: karan.ravat@rlogical.com
+                    PASSWORD: $apppassword
+                    FROM: karan.ravat@rlogical.com
+                    TO: @rlogical.com, @rlogical.com
+                    HOST: 'smtp.gmail.com'  
+                    PORT: 587
+                    SUBJECT: '${ALERT_TYPE}: Bitbucket Pipeline Notification for repo ${BITBUCKET_REPO_FULL_NAME} branch ${BITBUCKET_BRANCH}'
 
 *********************************************************************************************************************************************************************************************************************************************************************************
 
